@@ -1,58 +1,74 @@
-# This code implements Miller-Rabin primality test algorithm that checks if a number is prime, by checking if n is divisible by one of the terms in the algorithm, then n probably is prime.
-# We check a number n for primeness, take a random number a between 1 and n - 1, and check if n is divisible by one of the terms in the formula / algorithm.
-
 import random
-die = random.SystemRandom() # A single dice
+import time  # For measuring testing time
 
-def single_test(n, a): # take number n and test it for primeness, and a is the witness
-   exp = n -1
-   while not exp & 1: # While exp is not even
-       exp >>= 1 # bit manipulation, cut off the right bit, same as exp // 2 (integer division by 2), but since n is going to be large, bit-wise operations would be faster when dealing with integers
+die = random.SystemRandom()  # A secure random number generator
 
+def single_test(n, a):
+    """
+    Take number n and test it for primeness using witness a.
+    Returns True if n passes this round of Miller-Rabin, False otherwise.
+    """
+    exp = n - 1
+    while not exp & 1:  # While exp is even
+        exp >>= 1  # Bit manipulation equivalent to exp // 2
 
-   if pow(a, exp, n) == 1:
-       return True
+    if pow(a, exp, n) == 1:
+        return True
 
-   while exp < n - 1:
-       if pow(a, exp, n) == n - 1:
-           return True
+    while exp < n - 1:
+        if pow(a, exp, n) == n - 1:
+            return True
+        exp <<= 1
 
-       exp <<= 1
+    return False  # If none of the terms above succeed, n is composite
 
-   return False # If none of the terms above are divisible by n, return False
-
-
-def miller_rabin(n, k=40): # k is the values of a, choosing 40 lowers the chance of being wrong about the assumption of n being a prime
-    for i in range(k): # Check for k values
-        a = die.randrange(2, n - 1) # Random number greater than two, lower than n - 1 ( 1 < a < n - 1 ) for value of a
+def miller_rabin(n, k=40):
+    """
+    Probabilistic Miller-Rabin primality test.
+    k = number of random witnesses to test.
+    Returns True if n is probably prime, False if composite.
+    """
+    for i in range(k):
+        a = die.randrange(2, n - 1)  # Random witness 1 < a < n - 1
         if not single_test(n, a):
-            return False # If not verified as prime by the test, return False, if a number is not Prime then it must be Composite
+            return False  # Composite
+    return True  # Probably prime
 
-    return True # Otherwise return True
-
-#print(miller_rabin(4)) # Print if  a certain number is Prime or not, output is either True or False.
-
-def gen_prime(bits): # Function that will generate prime with bits number of bits, by generating large odd numbers and check if its prime
+def gen_prime(bits):
+    """
+    Generate a prime number with the specified number of bits.
+    Generates large odd numbers and tests them using Miller-Rabin.
+    """
     while True:
-        a = (die.randrange(1 << bits - 1, 1 << bits) << 1) + 1 # Generates a large prime with specified number of bits, guarantees that a is odd
+        a = (die.randrange(1 << (bits - 1), 1 << bits) << 1) + 1  # Ensure odd number
         if miller_rabin(a):
             return a
 
-
-
-# Generate two 1024 bit prime numbers, to check for primeness either, paste the output i.eg. the prime number, above in the code at:
-# print(miller_rabin(4), remove the comment # and replace 4 with the 1024-bit number that was generated, and it will give you either True or False, if it is prime or not.
-# One can also multiply p_one and p_two to check for primeness, if the two numbers are prime, the result of their multiplication will always be a non prime / composite number.
-# You will have to use either ChatGPT, Wolfram Alpha or any third party tool to confirm if the resulted number after multiplication is prime or not as my code does not include that.
+# Generate two 1024-bit prime numbers
+print("Generating first 1024-bit prime...")
 p_one = gen_prime(1024)
+print("Generating second 1024-bit prime...")
 p_two = gen_prime(1024)
 
-# After generating the two 1024-bit prime numbers, remember to comment the above and below code out, such that when you check for primeness, you don't generate new prime numbers.
+# -------------------------------
+# Measure testing time for p_one
+start_time = time.time()
+result_one = miller_rabin(p_one)
+end_time = time.time()
+print("\np_one:", p_one)
+print("p_one is prime:", result_one)
+print("Time to test p_one:", end_time - start_time, "seconds")
 
-print(p_one) # prints the first 1024-bit prime number
-print(p_two) # prints the second 1024-bit prime number
+# Measure testing time for p_two
+start_time = time.time()
+result_two = miller_rabin(p_two)
+end_time = time.time()
+print("\np_two:", p_two)
+print("p_two is prime:", result_two)
+print("Time to test p_two:", end_time - start_time, "seconds")
 
-#print(p_one * p_two) # Multiplication method
-# If you want to use the multiplication method, remove the comment # and run the code for the results, and check with a third party tool if the resulted number is prime or not
-
-
+# -------------------------------
+# Alternatively: Multiply the two primes to show the product is composite
+# print("\nMultiplication of p_one and p_two (will be composite):")
+# print(p_one * p_two)
+# Note: The multiplication result can be checked using a third-party tool if desired
