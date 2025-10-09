@@ -24,7 +24,7 @@ def pollard_rho(n):
         c = die.randrange(1, n - 1)  #
         d = 1                        # GCD value
 
-        # Floyd’s cycle-finding algorithm
+        # Floyd’s cycle-finding algorithm (Tortoise and Hare)
         while d == 1:
             # Generate next x and y using the function f(x) = (x^2 + c) mod n
             x = (x * x + c) % n
