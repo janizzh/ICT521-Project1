@@ -55,7 +55,7 @@ def factorize(n):
         return [2] + factorize(n // 2)
 
     # If n is prime, return it as a factor
-    if miller_rabin(n):  # Imported from miller_Rabin.py file
+    if miller_rabin(n):  # Imported from miller_Rabin.py file, this also prevents looping. Before trying to factorize n, check if n is prime, if it is prime then return it.
         return [n]
 
     # Otherwise, try finding a non-trivial factor using Pollard Rho
