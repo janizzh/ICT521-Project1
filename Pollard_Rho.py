@@ -1,4 +1,4 @@
-# Import the Miller-Rabin primality test code from miller_rabin.py file
+# Import the Miller-Rabin primality test code from miller_rabin.py code/file
 from miller_rabin import miller_rabin
 
 import random
