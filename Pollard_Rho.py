@@ -1,102 +1,102 @@
-# Import the Miller-Rabin primality test code from miller_rabin.py code/file
-from miller_rabin import miller_rabin
+# ======================================================
+# Pollard Rho (Floyd variant) with safeguards
+# ======================================================
 
-import random
 import math
+import random
 import time
+from miller_rabin import miller_rabin  # Keep your Miller-Rabin
+try:
+    from generated_primes import p_one, p_two
+except ImportError:
+    raise FileNotFoundError("generated_primes.py not found. Run miller_rabin.py first.")
 
-# A secure random number generator
+# Secure random number generator
 die = random.SystemRandom()
 
-# Finds a non-trivial factor of n
-def pollard_rho(n):
-    # Handle trivial cases
-    if n % 2 == 0:  # Even numbers are always divisible by 2
+# ------------------------------------------------------
+# Floyd's Pollard Rho algorithm with max iteration limit
+# ------------------------------------------------------
+def pollard_rho_floyd(n, max_iter=1_000_000):
+    """
+    Attempts to find a non-trivial factor of n using Floyd's Pollard Rho.
+    Returns a factor if found, None otherwise.
+    max_iter: maximum number of iterations before giving up.
+    """
+    if n % 2 == 0:
         return 2
     if n == 1:
         return 1
 
-    # Repeat until a factor is found
+    iter_count = 0
     while True:
-        # Random starting values for the algorithm
         x = die.randrange(2, n - 1)
         y = x
-        c = die.randrange(1, n - 1)  #
-        d = 1                        # GCD value
+        c = die.randrange(1, n - 1)
+        d = 1
 
-        # Floyd’s cycle-finding algorithm (Tortoise and Hare)
         while d == 1:
-            # Generate next x and y using the function f(x) = (x^2 + c) mod n
-            x = (x * x + c) % n
-            y = (y * y + c) % n
-            y = (y * y + c) % n  # y moves twice as fast as x
+            # Increment iteration counter
+            iter_count += 1
+            if iter_count > max_iter:
+                return None  # Give up after too many iterations
 
-            # Compute the GCD of |x - y| and n
+            # Floyd's iteration
+            x = (x*x + c) % n
+            y = (y*y + c) % n
+            y = (y*y + c) % n
             d = math.gcd(abs(x - y), n)
 
-            # If d == n, the attempt failed, restart with new parameters
-            if d == n:
+            if d == n:  # Failed attempt, restart
                 break
 
-        # If a non-trivial factor (1 < d < n) is found, return it
         if 1 < d < n:
             return d
 
+# ------------------------------------------------------
+# Factorization wrapper with retries and primality check
+# ------------------------------------------------------
+def factor_number(n, max_retries=5, max_iter=1_000_000):
+    """
+    Attempts to find a non-trivial factor of n using Floyd's Pollard Rho.
+    Returns (factor or None, elapsed time).
+    """
+    start_time = time.perf_counter()
 
+    # Step 1: Skip if prime
+    if miller_rabin(n):
+        return None, 0.0
 
-# Function to fully factorize an integer using Pollard Rho
-def factorize(n):
-    # Base case: 1 has no factors
-    if n == 1:
-        return []
+    # Step 2: Try multiple random seeds
+    for _ in range(max_retries):
+        factor_candidate = pollard_rho_floyd(n, max_iter=max_iter)
+        if factor_candidate and factor_candidate != n:
+            return factor_candidate, time.perf_counter() - start_time
 
-    # Handle even numbers directly
-    if n % 2 == 0:
-        return [2] + factorize(n // 2)
+    # Step 3: Give up if no factor found
+    return None, time.perf_counter() - start_time
 
-    # If n is prime, return it as a factor
-    if miller_rabin(n):  # Imported from miller_Rabin.py file, this also prevents looping. Before trying to factorize n, check if n is prime, if it is prime then return it.
-        return [n]
-
-    # Otherwise, try finding a non-trivial factor using Pollard Rho
-    d = pollard_rho(n)
-
-    # If Pollard Rho fails and returns n, treat n as prime
-    if d == n:
-        return [n]
-
-    # Factorize both parts: d and n/d
-    return factorize(d) + factorize(n // d)
-
-
-
-# Factorize (p - 1)/2 for two large primes
+# ------------------------------------------------------
+# MAIN
+# ------------------------------------------------------
 if __name__ == "__main__":
-    # Replace with any prime number
-    p_one = 10007
-
-    p_two = 65537
-
-    # Loop through both primes and factorize (p - 1)/2 for each
     for name, p in [("p_one", p_one), ("p_two", p_two)]:
-        print(f"\n{'='*60}")
-        print(f"Factoring ({name} - 1) / 2 ...")
+        print(f"\n{'='*70}")
+        print(f"Factoring ({name}-1)//2 ...")
 
-        # Compute (p - 1) / 2
-        n = (p - 1) // 2
+        n = (p-1)//2
+        print(f"Bit length of (p-1)//2: {n.bit_length()}")
 
-        # Measure how long the factorization takes
-        start = time.time()
-        factors = factorize(n)
-        end = time.time()
+        # Step 1: Check primality
+        if miller_rabin(n):
+            print(f"(p-1)//2 is probably prime → no non-trivial factors")
+            continue
 
-        # Print results
-        print(f"\n({name} - 1)/2 = {n}")
-        print("Factors found:", factors)
-        print("Time taken:", round(end - start, 4), "seconds")
-
-        # Determine whether non-trivial factors were found
-        if len(factors) == 1:
-            print("No non-trivial factors found (number is likely prime).")
+        # Step 2: Factor
+        factor, elapsed = factor_number(n, max_retries=5, max_iter=1_000_000)
+        if factor:
+            print(f"Found factor: {factor}")
+            print(f"Time taken: {elapsed:.6f} seconds")
         else:
-            print("Non-trivial factors found.")
+            print("No factor found → likely prime or very hard to factor")
+            print(f"Elapsed time: {elapsed:.6f} seconds")
