@@ -1,7 +1,5 @@
-# ======================================================
-# Pollard Rho (Floyd variant) with safeguards
-# ======================================================
 
+# Pollard Rho (Floyd variant)
 import math
 import random
 import time
@@ -14,9 +12,8 @@ except ImportError:
 # Secure random number generator
 die = random.SystemRandom()
 
-# ------------------------------------------------------
+
 # Floyd's Pollard Rho algorithm with max iteration limit
-# ------------------------------------------------------
 def pollard_rho_floyd(n, max_iter=1_000_000):
     """
     Attempts to find a non-trivial factor of n using Floyd's Pollard Rho.
@@ -53,9 +50,8 @@ def pollard_rho_floyd(n, max_iter=1_000_000):
         if 1 < d < n:
             return d
 
-# ------------------------------------------------------
+
 # Factorization wrapper with retries and primality check
-# ------------------------------------------------------
 def factor_number(n, max_retries=5, max_iter=1_000_000):
     """
     Attempts to find a non-trivial factor of n using Floyd's Pollard Rho.
@@ -76,9 +72,8 @@ def factor_number(n, max_retries=5, max_iter=1_000_000):
     # Step 3: Give up if no factor found
     return None, time.perf_counter() - start_time
 
-# ------------------------------------------------------
+
 # MAIN
-# ------------------------------------------------------
 if __name__ == "__main__":
     for name, p in [("p_one", p_one), ("p_two", p_two)]:
         print(f"\n{'='*70}")
